@@ -9,6 +9,7 @@ opts_chunk$set(echo = TRUE, results = "show", cache = TRUE)
 ## Loading and preprocessing the data
 
 ```{r load data}
+unzip("activity.zip")
 csvfile <- "activity.csv"
 adf <- read.csv(csvfile, header = TRUE)
 adfc <- adf[complete.cases(adf),]
