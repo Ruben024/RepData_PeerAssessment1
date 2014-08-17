@@ -1,20 +1,120 @@
-# Reproducible Research: Peer Assessment 1
+# Reproducible Research - Peer Assessment 1
 
+Set global chunk options
+
+```{r set chunk options, echo = TRUE}
+opts_chunk$set(echo = TRUE, results = "show", cache = TRUE)
+```
 
 ## Loading and preprocessing the data
 
-
+```{r load data}
+csvfile <- "activity.csv"
+adf <- read.csv(csvfile, header = TRUE)
+adfc <- adf[complete.cases(adf),]
+````
 
 ## What is mean total number of steps taken per day?
 
+- first calculate total steps by day *stepsbyday*
+- histogram the total steps taken each day
 
+```{r histogram}
+stepsbyday <- aggregate(steps ~ date, data = adfc, FUN = sum)
+hist(stepsbyday$steps, 
+     breaks = 7,
+     col = "green", 
+     main = "Histogram of Steps Taken Each Day", 
+     xlab ="steps by day") 
+```
+
+mean and mediam
+
+```{r}
+adfmean <- mean(adfc$steps)
+adfmedian <- median(adfc$steps)
+```
+
+The **steps' mean** is **`r adfmean`**  
+The **steps' median** is **`r adfmedian`**  
 
 ## What is the average daily activity pattern?
 
+```{r}
+stepsbyint <- aggregate(steps ~ interval, data = adf, FUN = mean)
+plot(stepsbyint$interval, stepsbyint$steps, main="Mean of Steps by Interval", xlab="5 minute interval", ylab = "Mean of Steps", type="l")
+maxinterval <- stepsbyint[stepsbyint$steps==max(stepsbyint$steps),]
+```
 
+**`r maxinterval$interval`** is the 5 minute interval which contains the maximum number of steps on the average 
 
 ## Imputing missing values
 
+The number of missing values is
+```{r}
+sum(is.na(adf))
+```
 
+Each NA value in steps is filled up with the appropriate mean of steps depending on the interval using *stepsbyint* data frame previously calculated
+```{r}
+adff <- adf
+for (i in 1:nrow(adff)) {
+    if (is.na(adff[i, "steps"])) {
+       adff[i, "steps"] <- stepsbyint[stepsbyint$interval == adff[i, "interval"], "steps"]       
+    }
+}
+```
+
+check there are not missing values in the new data frame
+
+```{r}
+sum(is.na(adff))
+```
+
+ 
+```{r histogram filled up na}
+stepsbydayf <- aggregate(steps ~ date, data = adff, FUN = sum)
+hist(stepsbydayf$steps, 
+     breaks = 7,
+     col = "green", 
+     main = "Histogram of Steps Taken Each Day, filled up dataset", 
+     xlab ="steps by day") 
+```
+
+mean and mediam for the filled up dataset, and the differences with the first part of assignment
+
+```{r}
+adffmean <- mean(adff$steps)
+adffmedian <- median(adff$steps)
+meandif <- adfmean - adffmean 
+mediandif <- adfmedian - adffmedian
+```
+The **steps' mean** is **`r adffmean`**, the difference is **`r meandif`**  
+The **steps' median** is **`r adffmedian`**, the difference is **`r mediandif`**
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r weekday and weekend}
+Sys.setlocale("LC_TIME", "English")
+
+adff$weekday <- weekdays(as.Date(adff$date))
+
+for (i in 1:nrow(adff)) {
+    if ( (adff[i, "weekday"]) %in% c("Saturday","Sunday") ) {
+       adff[i, "weekday"] <- "weekend"
+       }
+    else {
+       adff[i, "weekday"] <- "weekday"       
+       }
+            
+}
+```
+
+```{r steps sum aggrate by inteval and weekday }
+adffag <- aggregate(list(steps=adff$steps),list(interval=adff$interval,weekday=adff$weekday),mean)
+
+library(lattice)
+xyplot(steps ~ interval | weekday, data = adffag, 
+       layout = c(1, 2), type = "l", ylab = "Number of steps", main = "Average Steps")
+
+
